@@ -1,0 +1,65 @@
+.image-gallery__container {
+	position: relative;
+	display: inline-block;
+}
+
+.image-gallery__overlay {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: 3em;
+	right: 3em;
+	font-size: 1em;
+	color: rgba(0, 0, 0, .8);
+	text-shadow: 0 0 15px white;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	z-index: 1;
+	opacity: 0;
+	transition: opacity .1s ease, font-size .25s ease;
+}
+
+.stopped .image-gallery__overlay {
+	font-size: 2em;
+	opacity: 1;
+}
+
+.image-gallery__img {
+	opacity: 0;
+	transition: all .5s ease;
+}
+
+.image-gallery__img.active{
+	opacity: 1;
+}
+
+.image-gallery__btn {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	padding: 1em .25em;
+	color: rgba(0, 0, 0, .4);
+	display: flex;
+	align-items: center;
+	font-family: sans-serif;
+	font-size: 2.5em;
+	vertical-align: middle;
+	background-color: rgba(255, 255, 255, .2);
+	transition: all .25s ease;
+	cursor: pointer;
+}
+
+.image-gallery__btn:hover {
+	color: rgba(0, 0, 0, .6);
+	background-color: rgba(255, 255, 255, .4);
+}
+
+.image-gallery__prev {
+	left: 0;
+}
+
+.image-gallery__next {
+	right: 0;
+}
