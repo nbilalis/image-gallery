@@ -1,184 +1,189 @@
 'use strict';
 
-export default class ImageGallery
-{
-	constructor(id, images, interval = 3) {
-		/*
-		* Private fields
-		* ------------------------------ */
+class ImageGallery {
+  constructor(id, images, interval = 3000) {
+    this._el = document.getElementById(id);
 
-		// Don't change these directly
-		// use the corresponding properties
-		this._currentIndex = 0;					// Current image index, starting with 0
-		this._interval = interval * 1000;		// Interval between changes, in millisecs
-		this._intervalHandler = null;
-		this._images = images;
+    if (!this._el) {
+      throw new Error(`No element with id ${id} found`);
+    }
 
-		/*
-		* DOM manipulation
-		* ------------------------------ */
+    // Set "private" fields
+    this._currentIndex = 0;
+    this._images = images;
+    this._interval = interval;
 
-		// Main element
-		const el = document.getElementById(id);
-		el.classList.add('image-gallery__container');
-		this._el = el;
+    // Prepare DOM
+    this._render();
+    this._addHandlers();
 
-		// Overlay
-		const overlay = document.createElement('div');
-		overlay.innerHTML = '▌▌';
-		overlay.classList.add('image-gallery__overlay');
-		overlay.addEventListener('mousewheel', (event) => { this.changeInterval(event); });
-		overlay.addEventListener('click', () => { this.toggle(); });
-		el.appendChild(overlay);
+    // Start slideshow
+    this._showCurrent();
+    this.startSlideshow();
+  }
 
-		// Image element
-		const img = document.createElement('img');
-		img.classList.add('image-gallery__img');
-		el.appendChild(img);
-		this._img = img;
+  /*
+   * Properties (Getters/Setters)
+   * ----------------------------- */
 
-		// "Previous" button
-		const prev = document.createElement('div');
-		prev.innerHTML = '&laquo;';
-		prev.classList.add('image-gallery__btn');
-		prev.classList.add('image-gallery__prev');
-		prev.addEventListener('click', () => { this.prev(); });
-		el.appendChild(prev);
+  get currentIndex() {
+    return this._currentIndex;
+  }
 
-		// "Next" button
-		const next = document.createElement('div');
-		next.innerHTML = '&raquo;';
-		next.classList.add('image-gallery__btn');
-		next.classList.add('image-gallery__next');
-		next.addEventListener('click', () => { this.next(); });
-		el.appendChild(next);
+  get interval() {
+    return this._interval;
+  }
 
-		this.start();
-	}
+  set interval(value) {
+    const limit = 1000;
+    this._interval = Math.max(value, limit);
+  }
 
-	/*
-	 * Class Properties (Getters/Setters)
-	 * ------------------------------ */
+  /*
+   * "Private" Methods
+   * ----------------------------- */
 
-	get images() {
-		return this._images;
-	}
+  // Render necessary DOM elements
+  _render() {
+    // Main element
+    this._el.classList.add('image-gallery__container');
 
-	get noOfImages() {
-		return this._images.length;
-	}
+    // Overlay
+    const overlay = document.createElement('div');
+    overlay.textContent = '▌▌';
+    overlay.classList.add('image-gallery__overlay');
+    this._el.appendChild(overlay);
+    this._overlay = overlay;
 
-	get currentIndex() {
-		return this._currentIndex;
-	}
+    // Image element
+    const img = document.createElement('img');
+    img.classList.add('image-gallery__img');
+    this._el.appendChild(img);
+    this._img = img;
 
-	set currentIndex(value) {
-		this._currentIndex = value;
+    // "Previous" button
+    const prev = document.createElement('div');
+    prev.innerHTML = '&laquo;';
+    prev.classList.add('image-gallery__btn', 'image-gallery__prev');
+    this._el.appendChild(prev);
+    this._prev = prev;
 
-		// If we get over the upper limit reset to 0
-		if (this._currentIndex >= this.noOfImages) {
-			this._currentIndex = 0;
-		}
+    // "Next" button
+    const next = document.createElement('div');
+    next.innerHTML = '&raquo;';
+    next.classList.add('image-gallery__btn', 'image-gallery__next');
+    this._el.appendChild(next);
+    this._next = next;
+  }
 
-		// If we fall under the lower limit reset to last image index
-		if (this._currentIndex < 0) {
-			this._currentIndex = this.noOfImages - 1;
-		}
+  // Add Event handlers
+  _addHandlers() {
+    this._prev.addEventListener('click', () => {
+      this.showPrevious();
+    });
 
-		console.log(this._currentIndex);
-	}
+    this._next.addEventListener('click', () => {
+      this.showNext();
+    });
 
-	get interval() {
-		return this._interval;
-	}
+    this._overlay.addEventListener('click', () => {
+      this.toggle();
+    });
 
-	set interval(value) {
-		const minInterval = 1000;
+    this._overlay.addEventListener('mousewheel', (event) => {
+      const step = 250;
 
-		// Don't let `interval` be less than `minInterval`
-		this._interval = Math.max(value, minInterval);	// Math.max is used as a trick to set a lower limit
-	}
+      if (event.deltaY < 0) {
+        this.interval += step;
+      } else {
+        this.interval -= step;
+      }
 
-	get el() {
-		return this._el;
-	}
+      console.log(this.interval);
 
-	get img() {
-		return this._img;
-	}
+      this.reset();
 
-	/*
-	 * Class methods
-	 * ------------------------------ */
+      event.preventDefault();
+    });
+  }
 
-	// Show current image, and trigger a fade effect
-	// TODO: Not quite a proper solution for transition
-	show() {
-		this.img.classList.remove('active');
-		this.img.onload = () => {
-			this.img.classList.add('active');
-		};
-		this.img.src = this.images[this.currentIndex];
-	}
+  // Show current image, and trigger a fade effect
+  _showCurrent() {
+    this._img.classList.remove('active');
 
-	// Start the interval
-	start() {
-		this._handler = setInterval(() => {
-			this.currentIndex += 1;
-			this.show();
-		}, this.interval);
-		this.el.classList.remove('stopped');
-	}
+    this._img.onload = () => {
+      this._img.classList.add('active');
+    };
 
-	// Stop the interval
-	stop() {
-		clearInterval(this._handler);
-		this._handler = null;
-		this.el.classList.add('stopped');
-	}
+    // Give enough time for the fade effect to kick in
+    setTimeout(() => {
+      this._img.src = this._images[this._currentIndex];
+    }, 250);
+  }
 
-	/*
-	 * Event handlers
-	 * ------------------------------ */
+  _increaseIndex() {
+    /* this._currentIndex++;
 
-	// Tiggle between start and stop
-	toggle() {
-		if (this._handler) {
-			this.stop();
-		} else {
-			this.start();
-		}
-	}
+    if (this._currentIndex >= this._images.length) {
+      this._currentIndex = 0;
+    } */
 
-	// Show the previous image
-	prev() {
-		this.stop();
-		this.currentIndex -= 1;
-		this.show();
-	}
+    // Posh way to handle the current index
+    this._currentIndex = (this._currentIndex + 1) % this._images.length;
+  }
 
-	// SHow the next image
-	next() {
-		this.stop();
-		this.currentIndex += 1;
-		this.show();
-	}
+  _decreaseIndex() {
+    /* if (this._currentIndex === 0) {
+      this._currentIndex = this._images.length - 1;
+    } else {
+      this._currentIndex--;
+    } */
 
-	// Change the interval timing
-	changeInterval(event) {
-		const step = 100;
+    // Posh way to handle the current index
+    this._currentIndex = (this._currentIndex + this._images.length - 1) % this._images.length;
+  }
 
-		if (event.deltaY < 0) {
-			this.interval += step;
-		} else {
-			this.interval -= step;
-		}
+  /*
+   * "Public" Methods
+   * ----------------------------- */
 
-		this.stop();
-		this.start();
+  showNext() {
+    this._increaseIndex();
+    this._showCurrent();
 
-		event.preventDefault();
+    this.reset();
+  }
 
-		console.log(this.interval);
-	}
+  showPrevious() {
+    this._decreaseIndex();
+    this._showCurrent();
+
+    this.reset();
+  }
+
+  startSlideshow() {
+    this._handle = setInterval(() => {
+      this.showNext();
+    }, this._interval);
+    this._el.classList.remove('stopped');
+  }
+
+  stopSlideshow() {
+    if (this._handle) clearInterval(this._handle);
+    this._handle = null;
+    this._el.classList.add('stopped');
+  }
+
+  reset() {
+    this.stopSlideshow();
+    this.startSlideshow();
+  }
+
+  toggle() {
+    if (this._handle) {
+      this.stopSlideshow();
+    } else {
+      this.startSlideshow();
+    }
+  }
 }
